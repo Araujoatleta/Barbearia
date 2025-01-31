@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import cors from 'cors';
-import { sequelize, User } from './models/index.js';  // Importando o sequelize e o modelo User
+import { sequelize, User, Appointment, Service, Barber, LoyaltyPoint } from './models/index.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
@@ -18,6 +18,8 @@ import orderRoutes from './routes/orders.js';
 import barberRoutes from './routes/barbers.js';
 import promotionRoutes from './routes/promotions.js';
 import rewardRoutes from './routes/rewards.js';
+import adminRoutes from './routes/adminRoutes.js';  // Certifique-se de que o caminho está correto
+
 
 // Configuração do express e socket.io
 const app = express();
@@ -31,8 +33,7 @@ const io = new Server(httpServer, {
 
 app.use(cors());
 app.use(express.json());
-
-// JWT Middleware para Autenticação
+// Middleware JWT para Autenticação
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Extrai o token do cabeçalho
@@ -46,8 +47,20 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Usar as rotas de autenticação, login e registro
-app.use('/api/auth', authRoutes);  // Usando authRoutes corretamente
+// Middleware para verificar se o usuário é admin
+const authenticateAdmin = (req, res, next) => {
+  const { role } = req.user;  // O 'role' é extraído do JWT
+
+  if (role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied: Admins only' });
+  }
+
+  next();
+};
+
+// Usar as rotas de autenticação
+app.use('/api/auth', authRoutes);  // A rota /api/auth/login será registrada automaticamente
+
 
 // Roteamento das APIs
 app.use('/api/appointments', authenticateToken, appointmentRoutes);  // Rota protegida
@@ -62,6 +75,9 @@ app.use('/api/barbers', barberRoutes);  // Rota pública
 app.use('/api/promotions', authenticateToken, promotionRoutes);  // Rota protegida
 app.use('/api/rewards', authenticateToken, rewardRoutes);  // Rota protegida
 
+// Usando o middleware de admin em rotas específicas
+app.use('/api/admin', authenticateToken, authenticateAdmin, adminRoutes);  // Somente administradores
+
 // Sincronizar o banco de dados
 sequelize.sync({ force: false })
   .then(() => {
@@ -72,6 +88,21 @@ sequelize.sync({ force: false })
   });
 
 // Conexão do Socket.IO
+io.use((socket, next) => {
+  // Autenticar o token enviado com a conexão do socket
+  const token = socket.handshake.auth.token;
+  
+  if (!token) {
+    return next(new Error("Authentication error"));
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    if (err) return next(new Error("Authentication error"));
+    socket.user = user;  // Armazena o usuário na instância do socket
+    next();
+  });
+});
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 

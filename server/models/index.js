@@ -1,18 +1,18 @@
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
+import { sequelize } from '../database/db.js';  // Importando a instância do Sequelize
+import User from './User.js';
+import Appointment from './appointment.js';
+import Service from './service.js';
+import Barber from './barber.js';
+import LoyaltyPoint from './loyaltyPoint.js';
 
-dotenv.config();
+// Relacionamentos (associações) entre os modelos
+User.hasMany(Appointment, { foreignKey: 'client_id' });
+Appointment.belongsTo(User, { foreignKey: 'client_id' });
 
-// Inicializando o sequelize com o banco de dados SQLite
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: './database.sqlite',  // Ajuste o caminho conforme necessário
-});
+Service.hasMany(Appointment, { foreignKey: 'service_id' });
+Appointment.belongsTo(Service, { foreignKey: 'service_id' });
 
-// Importando e definindo o modelo User passando o sequelize
-import defineUser from './User.js';
+Barber.hasMany(Appointment, { foreignKey: 'barber_id' });
+Appointment.belongsTo(Barber, { foreignKey: 'barber_id' });
 
-const User = defineUser(sequelize); // Passando sequelize para o modelo User
-
-// Exportando o sequelize e o modelo User
-export { sequelize, User };
+export { sequelize, User, Appointment, Service, Barber, LoyaltyPoint };

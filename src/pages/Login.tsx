@@ -6,17 +6,18 @@ import { useAuth } from '../contexts/AuthContext';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth();  // Pegando o erro do contexto
+  const [error, setError] = useState<string | null>(null);  // Definindo o estado do erro
+  const navigate = useNavigate();  // Navegação aqui no Login
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate('/');
-    } catch (err) {
-      setError('Invalid email or password');
+      navigate('/');  // Redireciona após o login bem-sucedido
+    } catch (err: any) {
+      setError(err.message);  // Definindo a mensagem de erro
+      // O erro já está sendo tratado dentro do login, então não precisa fazer nada aqui
     }
   };
 
@@ -37,7 +38,7 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-900/50 text-red-200 p-3 rounded-md text-sm">
-                {error}
+                {error}  {/* Exibindo o erro de login */}
               </div>
             )}
 

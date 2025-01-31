@@ -9,11 +9,12 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'client'  // 'client' por padrão, mas pode ser alterado para 'admin'
+    role: 'client',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth(); // Use this if you have login functionality
+  const { register } = useAuth(); // Use the register function from context
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,40 +24,26 @@ const Register = () => {
       return;
     }
 
+    setError('');
+    setLoading(true);
+
     try {
-      // Enviar o registro para a API
-      const response = await fetch('http://localhost:3000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,  // Enviar o tipo de usuário (client/admin)
-        }),
-      });
+      // Chama a função de registro do contexto
+      await register(formData.name, formData.email, formData.password, formData.role);
 
-      if (!response.ok) {
-        throw new Error('Failed to create account');
-      }
-
-      // Após o registro, faça o login automático
-      await login(formData.email, formData.password);
-
-      // Redirecionar para a página principal ou página de sucesso
+      // Se o registro for bem-sucedido, redireciona o usuário
       navigate('/');
     } catch (err) {
-      console.error('Registration error:', err);
-      setError('Failed to create account');
+      setError('Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -145,7 +132,6 @@ const Register = () => {
               />
             </div>
 
-            {/* Novo campo para selecionar o tipo de usuário */}
             <div>
               <label htmlFor="role" className="block text-sm font-medium mb-2">
                 Account Type
@@ -162,9 +148,19 @@ const Register = () => {
               </select>
             </div>
 
-            <button type="submit" className="btn-primary w-full flex items-center justify-center space-x-2">
-              <UserPlus className="h-5 w-5" />
-              <span>Create Account</span>
+            <button
+              type="submit"
+              className={`btn-primary w-full flex items-center justify-center space-x-2 ${loading ? 'cursor-wait opacity-50' : ''}`}
+              disabled={loading}
+            >
+              {loading ? (
+                <span>Loading...</span>
+              ) : (
+                <>
+                  <UserPlus className="h-5 w-5" />
+                  <span>Create Account</span>
+                </>
+              )}
             </button>
           </form>
 

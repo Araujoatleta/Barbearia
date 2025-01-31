@@ -1,69 +1,49 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useState } from 'react';
+import axios from 'axios';  // Certifique-se de usar axios para comunicação com o backend
 
 interface AuthContextType {
   user: any;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  error: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Verificar se há um token no localStorage e obter os dados do usuário
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      axios.get('http://localhost:3000/api/auth/me') // Ajuste para seu endpoint de usuário autenticado
-        .then(response => {
-          setUser(response.data);
-          setIsAuthenticated(true);
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
-        });
-    }
-  }, []);
-
-  // Função de login, fazendo requisição ao backend para autenticar
   const login = async (email: string, password: string) => {
     try {
       const response = await axios.post('http://localhost:3000/api/auth/login', { email, password });
       const { token, user } = response.data;
-
-      // Salva o token no localStorage
+      
+      // Salve o token no localStorage ou onde for necessário
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
       setUser(user);
       setIsAuthenticated(true);
-    } catch (error) {
-      throw new Error('Login failed');
+    } catch (err) {
+      setError('Falha no login');
+      console.error(err);
     }
   };
 
-  // Função de logout
   const logout = () => {
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
     setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, error }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook para acessar o contexto
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

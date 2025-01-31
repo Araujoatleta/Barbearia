@@ -1,61 +1,88 @@
 import express from 'express';
-import { User } from '../models/index.js';  // Certifique-se de que o User está exportado corretamente de models/index.js
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';  // Para criptografar a senha
+import User from '../models/User.js';  // Importando o modelo User
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-// Rota de Login
+// Rota de login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
   try {
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
-
-    if (!validPassword) {
-      return res.status(401).json({ message: 'Invalid password' });
+    // Verificar a senha
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Gerar o token JWT
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '1h' });
+    // Gerar um token JWT
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '1h' });
 
-    res.json({ token });
+    res.json({
+      message: "Login successful",
+      token,  // Envia o token para o frontend
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Something went wrong!', error: error.message });
+    console.error('Error during login:', error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// Rota de Registro
+
+// Rota para registrar um novo usuário
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
+// Rota para registrar um novo usuário
+router.post('/register', async (req, res) => {
 
   try {
-    // Verifica se o email já existe
+    // Verificar se o usuário já existe
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already in use' });
+      return res.status(400).json({ message: "User with this email already exists" });
     }
 
-    // Criptografa a senha
+    // Criptografar a senha antes de salvar no banco de dados
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Cria o novo usuário
-    const user = await User.create({ name, email, password: hashedPassword });
+    // Criar o novo usuário
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,  // Senha criptografada
+      role: role || 'user',  // Se não houver role, atribui 'user' por padrão
+    });
 
-    // Retorna uma resposta de sucesso
-    res.status(201).json({ message: 'User created successfully', user });
-  } catch (err) {
-    console.error('Error registering user:', err);
-    res.status(500).json({ message: 'Failed to register user', error: err.message });
+    res.status(201).json({
+      message: "User created successfully",
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      }
+    });
+
+  } catch (error) {
+    console.error('Error during registration:', error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
-
-// Exportação correta para ser usado como 'default'
+});
 export default router;

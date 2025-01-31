@@ -1,5 +1,6 @@
+// routes/appointments.js
 import express from 'express';
-import db from '../db.js';
+import { sequelize } from '../database/db.js'; // Importando corretamente o sequelize
 
 const router = express.Router();
 

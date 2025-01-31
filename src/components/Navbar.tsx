@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Scissors, Calendar, MessageSquare, User, LogOut } from 'lucide-react';

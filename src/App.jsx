@@ -70,21 +70,21 @@ function App() {
 
             {/* Admin Routes */}
             <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute adminOnly>
-                  <AdminLayout>
-                    <Routes>
-                      <Route path="/" element={<AdminDashboard />} />
-                      <Route path="/barbers" element={<AdminBarbers />} />
-                      <Route path="/services" element={<AdminServices />} />
-                      <Route path="/promotions" element={<AdminPromotions />} />
-                      <Route path="/reports" element={<AdminReports />} />
-                    </Routes>
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
+  path="/admin/*"
+  element={
+    <ProtectedRoute adminOnly>
+      <AdminLayout>
+        <Routes>
+          <Route path="/" element={<AdminDashboard />} />
+          <Route path="/barbers" element={<AdminBarbers />} />
+          <Route path="/services" element={<AdminServices />} />
+          <Route path="/promotions" element={<AdminPromotions />} />
+          <Route path="/reports" element={<AdminReports />} />
+        </Routes>
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
           </Routes>
         </Router>
       </AuthProvider>
